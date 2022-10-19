@@ -150,7 +150,15 @@ where
                         route_name,
                         T::quota(route.method, route_name),
                     );
-                    if let Some(client_ip) = request.client_ip() {
+
+                    let mut client_ip = request.client_ip();
+                    if client_ip.is_none() {
+                        if let Some(fly_client_ip) = request.headers().get_one("Fly-Client-IP") {
+                            client_ip = fly_client_ip.parse().ok()
+                        }
+                    }
+
+                    if let Some(client_ip) = client_ip {
                         let limit_check_res = limiter.check_key(&client_ip);
                         match limit_check_res {
                             Ok(state) => {
